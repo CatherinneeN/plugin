@@ -5,7 +5,7 @@ from chimerax.atomic import AtomsArg
 from chimerax.alignment_algs import SmithWaterman
 from chimerax import sim_matrices
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 hello_world_desc = CmdDesc()
 
@@ -31,20 +31,63 @@ class DistanceCalculator:
 
             self.session.logger.info(model_id)
 
-            # Sequence alignment
+            # # Sequence alignment
+            #
+            # if hasattr(model, 'chains') and model.chains:
+            #     for chain in model.chains:
+            #         # chain_id = chain.id_string figure out to print chain_ID as in the /A
+            #         chain_sequence = chain.characters
+            #         # self.session.logger.info(chain_id)
+            #         self.session.logger.info(chain_sequence)
+            #         # Parameters provided on chimeraX example
+            #         score = SmithWaterman.align(protein_seq, chain_sequence, matrix, 1, 0.333)
+            #         self.session.logger.info(str(score))
+            #
+            # else:
+            #     self.session.logger.info("Not found")
+
+            # # testing what gap parameters to use for seq alignment
 
             if hasattr(model, 'chains') and model.chains:
                 for chain in model.chains:
-                    # chain_id = chain.id_string figure out to print chain_ID as in the /A
                     chain_sequence = chain.characters
-                    # self.session.logger.info(chain_id)
+
                     self.session.logger.info(chain_sequence)
-                    # Parameters provided on chimeraX example
-                    score = SmithWaterman.align(protein_seq, chain_sequence, matrix, 1, 0.333)
-                    self.session.logger.info(str(score))
+
+                    # Log header
+                    self.session.logger.info("Gap Open | Gap Extend | Score")
+                    self.session.logger.info("-----------------------------")
+
+                    # # Initial testing parameters
+                    # gap_opens = [1, 2, 3, 5, 10]
+                    # gap_extends = [0.01, 0.05, 0.1, 0.333, 0.5, 0.75, 1.0, 10]
+
+                    # # Testing parameters
+                    # gap_opens = [1]
+                    # gap_extends = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+
+                    gap_opens = [1]
+                    gap_extends = [0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0]
+
+                    for go in gap_opens:
+                        for ge in gap_extends:
+                            result = SmithWaterman.align(protein_seq, chain_sequence, matrix, go, ge)
+                            # self.session.logger.info(str(go) + "|" + str(ge) + "|" + str(score))
+
+                            if isinstance(result, tuple):
+                                # Splitting output results
+                                score, seq_alignment = result
+                                # Splitting alignment results
+                                aligned_query, aligned_target = seq_alignment
+                                # Count gaps
+                                count_gaps = aligned_query.count("-")
+                                # Count amino acids
+                                count_aa = len(aligned_query.replace("-", ""))
+                                # Print results
+                                self.session.logger.info(str(go) + "|" + str(ge) + "|" + str(score) + "|" + str(count_gaps) + "|" + str(count_aa))
 
             else:
-                self.session.logger.info("Not found")
+                self.session.logger.info("No chains found")
 
         # search with sequence alignment for CCTSIC we prefer local search engines for SA
         # Adding pseudo-bonds
@@ -90,4 +133,3 @@ def hello_world(session):
     # Calculate distances for each atom pair
     for atom1, atom2 in atom_pairs:
         calculator.calc_distances(atom1, atom2)
-
